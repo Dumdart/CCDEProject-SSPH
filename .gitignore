@@ -1,0 +1,76 @@
+# Azure Functions
+local.settings.json
+__blobstorage__/
+__queuestorage__/
+__azurite_db*__.json
+.python_packages/
+
+# Node artifacts
+node_modules/
+package-lock.json
+yarn.lock
+npm-debug.log*
+dist/
+build/
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Azure Static Web Apps
+.azure/
+api_build_env/
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+
+# Logs
+logs/
+*.log
+
+# OS
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Secrets and credentials (NEVER commit these)
+*.pfx
+*.p12
+*.key
+*.pem
+connection-strings.json
+secrets.json
+
+# Build outputs
+wwwroot/
+obj/
+bin/
