@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "PortfolioApi": {
+      "commandName": "Project",
+      "commandLineArgs": "--port 7188",
+      "launchBrowser": false
+    }
+  },
+
+  "CosmosDBConnection": "AccountEndpoint=https://ccdeportfolio-db.documents.azure.com:443/;AccountKey=HncQVST33uA5zxqYbyVONJDZX5QkWRjZVVtGLYVTjurm2KeBqwx3YOGOYCCYjKWOVOgnVsTDkGXlACDb3JlpJg==;"
+}

@@ -5,6 +5,19 @@ __queuestorage__/
 __azurite_db*__.json
 .python_packages/
 
+# Visual Studio workspace files
+.vs/
+*.suo
+*.vsscc
+*.user
+*.userosscache
+
+# Local database and project files
+*.sqlite
+*.db
+
+# JetBrains Rider
+.idea/
 # Node artifacts
 node_modules/
 package-lock.json
