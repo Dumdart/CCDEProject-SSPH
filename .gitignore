@@ -74,3 +74,4 @@ secrets.json
 wwwroot/
 obj/
 bin/
+/.vs
