@@ -7,5 +7,7 @@
     }
   },
 
-  "CosmosDBConnection": "AccountEndpoint=https://ccdeportfolio-db.documents.azure.com:443/;AccountKey=HncQVST33uA5zxqYbyVONJDZX5QkWRjZVVtGLYVTjurm2KeBqwx3YOGOYCCYjKWOVOgnVsTDkGXlACDb3JlpJg==;"
+  "CosmosDBConnection": "AccountEndpoint=https://ccdeportfolio-db.documents.azure.com:443/;AccountKey=HncQVST33uA5zxqYbyVONJDZX5QkWRjZVVtGLYVTjurm2KeBqwx3YOGOYCCYjKWOVOgnVsTDkGXlACDb3JlpJg==;",
+  "COSMOS_DATABASE_ID": "PortfolioDB",
+  "COSMOS_CONTAINER_ID": "PageViews"
 }
