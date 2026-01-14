@@ -13,7 +13,7 @@ builder.Services
     .ConfigureFunctionsApplicationInsights();
 
 builder.Services.AddSingleton(_ => {
-    var constring = Environment.GetEnvironmentVariable("CosmosDBConnection");
+    var constring = Environment.GetEnvironmentVariable("COSMOSDB_CONNECTION_STRING");
     return new CosmosClient(constring);
 });
 
