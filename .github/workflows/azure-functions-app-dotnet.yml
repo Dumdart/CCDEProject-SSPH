@@ -6,7 +6,7 @@ on:
 
 env:
   AZURE_FUNCTIONAPP_NAME: 'ccdeproject-api'     
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'src/CCDE-PortfolioApp\PortfolioApi'    
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'CCDE-PortfolioApp\PortfolioApi'    
   DOTNET_VERSION: '10.0.x'                                 
 
 jobs:
