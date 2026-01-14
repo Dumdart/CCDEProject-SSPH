@@ -7,12 +7,11 @@ on:
 env:
   AZURE_FUNCTIONAPP_NAME: 'ccdeproject-api'     
   AZURE_FUNCTIONAPP_PACKAGE_PATH: 'CCDE-PortfolioApp\PortfolioApi'    
-  DOTNET_VERSION: '10.0.x'                                 
+  DOTNET_VERSION: '8.0.x'                                 
 
 jobs:
   build-and-deploy:
     runs-on: windows-latest
-    environment: dev
 
     steps:
       - name: Checkout
@@ -23,11 +22,11 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Build function project
+      - name: Publish function project
         shell: pwsh
         run: |
           pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
-          dotnet build --configuration Release --output ./output
+          dotnet publish --configuration Release --output ./publish --no-self-contained
           popd
 
       - name: Deploy to Azure Function App
@@ -35,10 +34,10 @@ jobs:
         id: fa
         with:
           app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
-          package: '${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
+          package: '${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/publish'
           publish-profile: ${{ secrets.AZURE_FUNCTION_PUBLISH_PROFILE }}
-          respect-pom-xml: false
-          respect-funcignore: true
+          scm-do-build-during-deployment: false
+          enable-oryx-build: false
 
                             
 
