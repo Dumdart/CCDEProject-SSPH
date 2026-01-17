@@ -26,6 +26,8 @@ public class PageView {
         var pageId = ( query["pageId"] ?? "home" ).ToString();
         var id = $"{pageId}-page-counter";
 
+        _logger.LogInformation("PageView called with URL: {Url}", req.Url);
+
         var databaseId = Environment.GetEnvironmentVariable("COSMOS_DATABASE_ID");
         var containerId = Environment.GetEnvironmentVariable("COSMOS_CONTAINER_ID");
 
@@ -35,10 +37,12 @@ public class PageView {
 
         try {
             var read = await container.ReadItemAsync<CounterDoc>(id, new PartitionKey(pageId));
+            _logger.LogInformation("Resolved pageId: {PageId}", pageId);
             doc = read.Resource;
         }
         catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound) {
-            doc = new CounterDoc(id, pageId, 0, DateTimeOffset.UtcNow.ToString("O"));
+            doc = new CounterDoc(id, pageId, 0, DateTimeOffset.UtcNow.ToString("O"));            
+            _logger.LogError(ex, ex.Message);
         }
 
         var updated = doc with {

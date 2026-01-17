@@ -15,7 +15,12 @@ async function refresh() {
   try {
     // Azure Static Web Apps proxies /api to the Functions backend
     const res = await fetch(`${apiBaseUrl}/api/visitor-count?pageId=home`);
-    const data = await res.json();
+    console.log("Status:", res.status, "OK?", res.ok);
+    console.log("Headers:", [...res.headers.entries()]);
+
+    const data = await res.json();    
+    console.log("Raw body:", text);
+
     if (!res.ok) throw new Error(data?.message || "Request failed");
 
     viewCount.value = data.viewCount;
