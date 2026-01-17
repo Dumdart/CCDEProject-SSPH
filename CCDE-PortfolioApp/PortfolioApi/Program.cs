@@ -13,11 +13,24 @@ builder.Services
     .AddApplicationInsightsTelemetryWorkerService()
     .ConfigureFunctionsApplicationInsights();
 
-builder.Services.AddSingleton<CosmosClient>(serviceProvider => {
-    var configuration = serviceProvider.GetRequiredService<IConfiguration>();
-    var connectionString = configuration["COSMOSDB_CONNECTION_STRING"] ??
-                           Environment.GetEnvironmentVariable("COSMOSDB_CONNECTION_STRING");
-    return new CosmosClient(connectionString);
+builder.Services.AddSingleton<CosmosClient>(sp => {
+    try {
+        var config = sp.GetRequiredService<IConfiguration>();
+        var connStr = config.GetValue<string>("COSMOSDB_CONNECTION_STRING")
+                      ?? Environment.GetEnvironmentVariable("COSMOSDB_CONNECTION_STRING");
+        if (string.IsNullOrWhiteSpace(connStr))
+            throw new InvalidOperationException("COSMOSDB_CONNECTION_STRING missing or empty.");
+
+        var client = new CosmosClient(connStr);
+        // Lazy test connection (optional, but catches issues early)
+        // var db = client.GetDatabase("test"); // Uncomment after DB exists
+        return client;
+    }
+    catch (Exception ex) {
+        // Log via root logger or throw to expose in host startup
+        Console.Error.WriteLine($"CosmosClient init failed: {ex}");
+        throw;
+    }
 });
 
 builder.Build().Run();
