@@ -28,14 +28,10 @@ public class PageView {
             await errorRes.WriteAsJsonAsync(new { error = "Cosmos client unavailable" });
             return errorRes;
         }
-        try {
+
             var query = HttpUtility.ParseQueryString(req.Url.Query);
             var pageId = ( query["pageId"] ?? "home" ).ToString();
-            var id = $"{pageId}-page-counter";
-        }
-        catch {
-            _logger.LogError("CosmojjsClient");
-        }
+            var id = $"{pageId}-page-counter";  
 
 
 
