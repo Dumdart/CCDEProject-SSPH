@@ -12,9 +12,11 @@ namespace PortfolioApi;
 
 public class PageView {
     private readonly ILogger<PageView> _logger;
+    private readonly CosmosClient _cosmos;
 
-    public PageView(ILogger<PageView> logger) {
+    public PageView(ILogger<PageView> logger, CosmosClient cosmosClient) {
         _logger = logger;
+        _cosmos = cosmosClient;
     }
 
     [Function("PageView")]

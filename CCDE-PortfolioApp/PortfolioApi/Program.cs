@@ -1,6 +1,7 @@
-using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Cosmos;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Builder;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -12,15 +13,11 @@ builder.Services
     .AddApplicationInsightsTelemetryWorkerService()
     .ConfigureFunctionsApplicationInsights();
 
-builder.Services.AddSingleton(_ => {
-    var constring = Environment.GetEnvironmentVariable("COSMOSDB_CONNECTION_STRING");
-    
-    if (string.IsNullOrEmpty(constring)) {
-        throw new InvalidOperationException(
-            "COSMOSDB_CONNECTION_STRING environment variable is not set");
-    }
-
-    return new CosmosClient(constring);
+builder.Services.AddSingleton<CosmosClient>(serviceProvider => {
+    var configuration = serviceProvider.GetRequiredService<IConfiguration>();
+    var connectionString = configuration["COSMOSDB_CONNECTION_STRING"] ??
+                           Environment.GetEnvironmentVariable("COSMOSDB_CONNECTION_STRING");
+    return new CosmosClient(connectionString);
 });
 
 builder.Build().Run();
