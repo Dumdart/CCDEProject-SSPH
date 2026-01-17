@@ -29,18 +29,3 @@ var host = new HostBuilder()
     .Build();
 
 host.Run();
-
-var builder = FunctionsApplication.CreateBuilder(args);
-
-builder.ConfigureFunctionsWebApplication();
-
-builder.Services
-    .AddApplicationInsightsTelemetryWorkerService()
-    .ConfigureFunctionsApplicationInsights();
-
-builder.Services.AddSingleton(_ => {
-    var constring = Environment.GetEnvironmentVariable("COSMOSDB_CONNECTION_STRING");
-    return new CosmosClient(constring);
-});
-
-builder.Build().Run();
