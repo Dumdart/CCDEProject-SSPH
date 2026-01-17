@@ -14,6 +14,11 @@ builder.Services
 
 builder.Services.AddSingleton(_ => {
     var constring = Environment.GetEnvironmentVariable("COSMOSDB_CONNECTION_STRING");
+    
+    if (string.IsNullOrEmpty(constring)) {
+        throw new InvalidOperationException(
+            "COSMOSDB_CONNECTION_STRING environment variable is not set");
+    }
 
     return new CosmosClient(constring);
 });
