@@ -21,8 +21,11 @@ jobs:
       pull-requests: write
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
     runs-on: ubuntu-latest
-    name: Build and Deploy Job
 
+    env:
+      VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+
+    name: Build and Deploy Job   
     steps:
       - uses: actions/checkout@v4
         with:
@@ -43,3 +46,5 @@ jobs:
           app_location: ${{ env.APP_LOCATION }}
           api_location: ${{ env.API_LOCATION }}
           app_artifact_location: ${{ env.APP_ARTIFACT_LOCATION }}
+
+  

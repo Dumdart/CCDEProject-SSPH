@@ -6,20 +6,25 @@ const error = ref("");
 const viewCount = ref(0);
 const lastUpdated = ref("");
 
+// Get gitsecret from meta env(configured in pipeline) 
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+
 async function refresh() {
   loading.value = true;
   error.value = "";
   try {
     // Azure Static Web Apps proxies /api to the Functions backend
-    const res = await fetch("/api/visitor-count?pageId=home");
+    const res = await fetch(`${apiBaseUrl}/api/visitor-count?pageId=home`);
     const data = await res.json();
     if (!res.ok) throw new Error(data?.message || "Request failed");
 
     viewCount.value = data.viewCount;
     lastUpdated.value = data.lastUpdated;
-  } catch (e) {
+  } 
+  catch (e) {
     error.value = e.message;
-  } finally {
+  } 
+  finally {
     loading.value = false;
   }
 }
