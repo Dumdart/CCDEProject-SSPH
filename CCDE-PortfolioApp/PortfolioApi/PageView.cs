@@ -14,9 +14,9 @@ public class PageView {
     private readonly ILogger<PageView> _logger;
     private readonly CosmosClient _cosmos;
 
-    public PageView(ILogger<PageView> logger, CosmosClient cosmosCosmos) {
+    public PageView(ILogger<PageView> logger, CosmosClient cosmosClient) {
         _logger = logger;
-        _cosmos = cosmosCosmos;
+        _cosmos = cosmosClient;
     }
 
     [Function("PageView")]
@@ -32,7 +32,6 @@ public class PageView {
             var query = HttpUtility.ParseQueryString(req.Url.Query);
             var pageId = ( query["pageId"] ?? "home" ).ToString();
             var id = $"{pageId}-page-counter";  
-
 
 
         _logger.LogInformation("PageView called with URL: {Url}", req.Url);
