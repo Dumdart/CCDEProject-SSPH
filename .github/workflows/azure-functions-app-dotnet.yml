@@ -47,8 +47,8 @@ jobs:
               COSMOS_CONTAINER_ID=$env:COSMOSDB_CONTAINER_ID
         env:
           COSMOSDB_CONNECTION_STRING: ${{ secrets.COSMOSDB_CONNECTION_STRING }}
-          COSMOSDB_DATABASE_ID: ${{ secrets.COSMOSDB_DATABASE_ID }}
-          COSMOSDB_CONTAINER_ID: ${{ secrets.COSMOSDB_CONTAINER_ID }}
+          COSMOSDB_DATABASE_ID: ${{ vars.COSMOS_DATABASE_ID }}
+          COSMOSDB_CONTAINER_ID: ${{ vars.COSMOS_CONTAINER_ID }} 
 
       - name: Deploy to Azure Function App
         uses: Azure/functions-action@v1
