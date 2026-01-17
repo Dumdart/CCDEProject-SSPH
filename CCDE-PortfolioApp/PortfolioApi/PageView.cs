@@ -22,30 +22,27 @@ public class PageView {
     [Function("PageView")]
     public async Task<HttpResponseData> Run([HttpTrigger(AuthorizationLevel.Function,
             "get", Route = "visitor-count")] HttpRequestData req) {
-        var query = HttpUtility.ParseQueryString(req.Url.Query);
-        var pageId = ( query["pageId"] ?? "home" ).ToString();
-        var id = $"{pageId}-page-counter";
-
         if (_cosmos == null) {
             _logger.LogError("CosmosClient is null");
             var errorRes = req.CreateResponse(HttpStatusCode.ServiceUnavailable);
             await errorRes.WriteAsJsonAsync(new { error = "Cosmos client unavailable" });
             return errorRes;
         }
-        
-        var databaseId = Environment.GetEnvironmentVariable("COSMOS_DATABASE_ID");
-        _logger.LogInformation("DatabaseID:" +  databaseId);
-
-        var containerId = Environment.GetEnvironmentVariable("COSMOS_CONTAINER_ID");
-        if (string.IsNullOrEmpty(databaseId) || string.IsNullOrEmpty(containerId)) {
-            _logger.LogError("Missing env vars: DB={Db}, Container={Container}", databaseId, containerId);
-            // return 500
+        try {
+            var query = HttpUtility.ParseQueryString(req.Url.Query);
+            var pageId = ( query["pageId"] ?? "home" ).ToString();
+            var id = $"{pageId}-page-counter";
         }
+        catch {
+            _logger.LogError("CosmojjsClient");
+        }
+
+
 
         _logger.LogInformation("PageView called with URL: {Url}", req.Url);
 
         var databaseId = Environment.GetEnvironmentVariable("COSMOS_DATABASE_ID");
-        _logger.LogInformation("DatabaseID:" +  databaseId);
+        _logger.LogInformation("DatabaseID:" + databaseId);
 
         var containerId = Environment.GetEnvironmentVariable("COSMOS_CONTAINER_ID");
         _logger.LogInformation($"{containerId}");
