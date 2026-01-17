@@ -26,6 +26,22 @@ public class PageView {
         var pageId = ( query["pageId"] ?? "home" ).ToString();
         var id = $"{pageId}-page-counter";
 
+        if (_cosmos == null) {
+            _logger.LogError("CosmosClient is null");
+            var errorRes = req.CreateResponse(HttpStatusCode.ServiceUnavailable);
+            await errorRes.WriteAsJsonAsync(new { error = "Cosmos client unavailable" });
+            return errorRes;
+        }
+        
+        var databaseId = Environment.GetEnvironmentVariable("COSMOS_DATABASE_ID");
+        _logger.LogInformation("DatabaseID:" +  databaseId);
+
+        var containerId = Environment.GetEnvironmentVariable("COSMOS_CONTAINER_ID");
+        if (string.IsNullOrEmpty(databaseId) || string.IsNullOrEmpty(containerId)) {
+            _logger.LogError("Missing env vars: DB={Db}, Container={Container}", databaseId, containerId);
+            // return 500
+        }
+
         _logger.LogInformation("PageView called with URL: {Url}", req.Url);
 
         var databaseId = Environment.GetEnvironmentVariable("COSMOS_DATABASE_ID");
