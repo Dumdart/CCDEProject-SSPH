@@ -14,9 +14,6 @@ builder.Services
 
 builder.Services.AddSingleton(_ => {
     var constring = Environment.GetEnvironmentVariable("COSMOSDB_CONNECTION_STRING");
-    Console.WriteLine(constring);
-    Console.WriteLine(Environment.GetEnvironmentVariable("COSMOS_DATABASE_ID"));
-    Console.WriteLine(Environment.GetEnvironmentVariable("COSMOS_CONTAINER_ID"));
 
     return new CosmosClient(constring);
 });

@@ -29,7 +29,14 @@ public class PageView {
         _logger.LogInformation("PageView called with URL: {Url}", req.Url);
 
         var databaseId = Environment.GetEnvironmentVariable("COSMOS_DATABASE_ID");
+        _logger.LogInformation("DatabaseID:" +  databaseId);
+
         var containerId = Environment.GetEnvironmentVariable("COSMOS_CONTAINER_ID");
+        _logger.LogInformation($"{containerId}");
+
+        var constring = Environment.GetEnvironmentVariable("COSMOSDB_CONNECTION_STRING");
+        Console.WriteLine(constring);
+
 
         var container = _cosmos.GetContainer(databaseId, containerId);
 
