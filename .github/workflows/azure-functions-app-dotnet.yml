@@ -52,10 +52,10 @@ jobs:
             --settings `
               COSMOS_ENDPOINT=$env:COSMOS_ENDPOINT `
               COSMOS_KEY=$env:COSMOS_KEY `
-              COSMOSDB_DATABASE_ID=$env:COSMOSDB_DATABASE_ID `
+              COSMOS_DATABASE_ID=$env:COSMOSDB_DATABASE_ID `
               COSMOS_CONTAINER_ID=$env:COSMOS_CONTAINER_ID
         env:    
           COSMOS_ENDPOINT: ${{ secrets.COSMOS_ENDPOINT }} 
           COSMOS_KEY: ${{ secrets.COSMOS_KEY }}
-          COSMOSDB_DATABASE_ID: ${{ vars.COSMOS_DATABASE_ID }}
-          COSMOSDB_CONTAINER_ID: ${{ vars.COSMOS_CONTAINER_ID }} 
+          COSMOS_DATABASE_ID: ${{ vars.COSMOS_DATABASE_ID }}
+          COSMOS_CONTAINER_ID: ${{ vars.COSMOS_CONTAINER_ID }} 
