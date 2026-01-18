@@ -1,3 +1,5 @@
+using Azure.Core;
+using Azure.Identity;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Builder;
@@ -14,23 +16,13 @@ builder.Services
     .ConfigureFunctionsApplicationInsights();
 
 builder.Services.AddSingleton<CosmosClient>(sp => {
-    try {
-        var config = sp.GetRequiredService<IConfiguration>();
-        var connStr = config.GetValue<string>("COSMOSDB_CONNECTION_STRING")
-                      ?? Environment.GetEnvironmentVariable("COSMOSDB_CONNECTION_STRING");
-        if (string.IsNullOrWhiteSpace(connStr))
-            throw new InvalidOperationException("COSMOSDB_CONNECTION_STRING missing or empty.");
+    var endpoint = Environment.GetEnvironmentVariable("COSMOS_ENDPOINT")
+                  ?? throw new InvalidOperationException("COSMOS_ENDPOINT missing.");
 
-        var client = new CosmosClient(connStr);
-        // Lazy test connection (optional, but catches issues early)
-        // var db = client.GetDatabase("test"); // Uncomment after DB exists
-        return client;
-    }
-    catch (Exception ex) {
-        // Log via root logger or throw to expose in host startup
-        Console.Error.WriteLine($"CosmosClient init failed: {ex}");
-        throw;
-    }
+    var key = Environment.GetEnvironmentVariable("COSMOS_KEY")
+              ?? throw new InvalidOperationException("COSMOS_KEY missing.");
+    
+    return new CosmosClient(endpoint, key);
 });
 
 builder.Build().Run();
