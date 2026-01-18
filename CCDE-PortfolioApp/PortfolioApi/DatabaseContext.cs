@@ -14,7 +14,7 @@ namespace PortfolioApi {
             var containerId = Environment.GetEnvironmentVariable("COSMOS_CONTAINER_ID");
 
             modelBuilder.Entity<CounterDoc>()
-                .ToContainer("containerId") 
+                .ToContainer(containerId) 
                 .HasPartitionKey(x => x.PageId);  
             modelBuilder.Entity<CounterDoc>()
                 .HasKey(x => x.Id);
