@@ -26,8 +26,8 @@ async function refresh() {
 
     if (!res.ok) throw new Error(data?.message || "Request failed");
 
-    viewCount.value = data.viewCount;
-    lastUpdated.value = data.lastUpdated;
+    viewCount.value = data.ViewCount;
+    lastUpdated.value = data.LastUpdated;
   } 
   catch (e) {
     error.value = e.message;
