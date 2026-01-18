@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using PortfolioApi;
 
 var builder = FunctionsApplication.CreateBuilder(args);
@@ -27,8 +28,10 @@ builder.Services.AddDbContext<DatabaseContext>(options => {
     var databaseId = Environment.GetEnvironmentVariable("COSMOS_DATABASE_ID")
                       ?? throw new InvalidOperationException("COSMOS_DATABASE_ID missing.");
 
-    options.UseCosmos(endpoint, key, databaseId);
+    options.UseCosmos(endpoint, key, databaseId)        
+        .EnableDetailedErrors()           
+        .EnableSensitiveDataLogging()
+        .LogTo(Console.WriteLine, LogLevel.Debug);
 });
-
 
 builder.Build().Run();

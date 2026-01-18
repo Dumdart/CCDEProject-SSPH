@@ -6,7 +6,9 @@
       "Functions.PageView": "Debug",
       "Microsoft.Azure.Cosmos": "Debug",
       "Microsoft.Azure.WebJobs": "Debug",
-      "Microsoft.Extensions.Hosting": "Debug"
+      "Microsoft.Extensions.Hosting": "Debug",
+      "Microsoft.EntityFrameworkCore": "Debug",
+      "Microsoft.EntityFrameworkCore.Database.Command": "Information"
     },
     "applicationInsights": {
       "samplingSettings": {
