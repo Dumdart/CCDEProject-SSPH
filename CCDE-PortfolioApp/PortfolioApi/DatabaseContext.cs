@@ -16,7 +16,10 @@ namespace PortfolioApi {
             modelBuilder.Entity<CounterDoc>()
                 .ToContainer(containerId)
                 .HasPartitionKey(x => x.PageId)
-                .HasNoDiscriminator();
+                .HasNoDiscriminator()
+                .Property(x => x.PageId)
+                .ToJsonProperty("pageId");
+
             modelBuilder.Entity<CounterDoc>()
                 .HasKey(x => x.Id);
         }
