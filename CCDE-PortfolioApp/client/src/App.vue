@@ -17,10 +17,12 @@ async function refresh() {
     // Azure Static Web Apps proxies /api to the Functions backend
     const res = await fetch(`${apiBaseUrl}/api/visitor-count?pageId=home&code=${apiKey}`);
     console.log("Status:", res.status, "OK?", res.ok);
-    console.log("Headers:", [...res.headers.entries()]);
 
-    const data = await res.json();    
+    const text = await res.text();  // Read body as text first
     console.log("Raw body:", text);
+    
+     const data = JSON.parse(text);  // Parse manually
+    console.log("Parsed data:", data);
 
     if (!res.ok) throw new Error(data?.message || "Request failed");
 

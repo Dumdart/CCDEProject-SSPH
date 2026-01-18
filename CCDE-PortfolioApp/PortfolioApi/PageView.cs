@@ -46,7 +46,8 @@ public class PageView {
                 _logger.LogInformation("Added new doc");
             }
             else {
-                doc = doc with { ViewCount = doc.ViewCount + 1, LastUpdated = DateTimeOffset.UtcNow.ToString("O") };
+                doc.ViewCount += 1;
+                doc.LastUpdated = DateTimeOffset.UtcNow.ToString("O");
                 _dbContext.Counters.Update(doc);
                 _logger.LogInformation("Updated existing doc");
             }
