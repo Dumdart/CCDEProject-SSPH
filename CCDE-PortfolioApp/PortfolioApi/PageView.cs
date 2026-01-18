@@ -48,7 +48,6 @@ public class PageView {
             else {
                 doc.ViewCount += 1;
                 doc.LastUpdated = DateTimeOffset.UtcNow.ToString("O");
-                _dbContext.Counters.Update(doc);
                 _logger.LogInformation("Updated existing doc");
             }
 
