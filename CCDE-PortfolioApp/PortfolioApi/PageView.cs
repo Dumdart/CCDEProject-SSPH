@@ -12,81 +12,39 @@ namespace PortfolioApi;
 
 public class PageView {
     private readonly ILogger<PageView> _logger;
-    private readonly CosmosClient _cosmos;
+    private readonly DatabaseContext _dbContext;
 
-    public PageView(ILogger<PageView> logger, CosmosClient cosmosClient) {
+    public PageView(ILogger<PageView> logger, DatabaseContext dbContext) {
         _logger = logger;
-        _cosmos = cosmosClient;
+        _dbContext = dbContext;
     }
 
     [Function("PageView")]
-    public async Task<HttpResponseData> Run([HttpTrigger(AuthorizationLevel.Function,
-            "get", Route = "visitor-count")] HttpRequestData req) {
-        //if (_cosmos == null) {
-        //    _logger.LogError("CosmosClient is null");
-        //    var errorRes = req.CreateResponse(HttpStatusCode.ServiceUnavailable);
-        //    await errorRes.WriteAsJsonAsync(new { error = "Cosmos client unavailable" });
-        //    return errorRes;
-        //}
-
-        //    var query = HttpUtility.ParseQueryString(req.Url.Query);
-        //    var pageId = ( query["pageId"] ?? "home" ).ToString();
-        //    var id = $"{pageId}-page-counter";  
-
-
+    public async Task<HttpResponseData> Run([HttpTrigger(AuthorizationLevel.Function, "get", Route = "visitor-count")] HttpRequestData req) {
         _logger.LogInformation("PageView called with URL: {Url}", req.Url);
 
-        //var databaseId = Environment.GetEnvironmentVariable("COSMOS_DATABASE_ID");
-        //_logger.LogInformation("DatabaseID:" + databaseId);
-
-        //var containerId = Environment.GetEnvironmentVariable("COSMOS_CONTAINER_ID");
-        //_logger.LogInformation($"{containerId}");
-
-        //var constring = Environment.GetEnvironmentVariable("COSMOSDB_CONNECTION_STRING");
-        //Console.WriteLine(constring);
-
-
-        //var container = _cosmos.GetContainer(databaseId, containerId);
-
-        CounterDoc doc = new("id",  "home", 0, "");
-
-        //try {
-        //    var read = await container.ReadItemAsync<CounterDoc>(id, new PartitionKey(pageId));
-        //    doc = read.Resource;
-        //    _logger.LogInformation("Found existing doc: {Doc}", doc);
-        //}
-        //catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound) {
-        //    _logger.LogInformation("Doc not found, creating new: id={Id}", id);
-        //    doc = new CounterDoc(id, pageId, 0, DateTimeOffset.UtcNow.ToString("O"));
-        //}
-        //catch (CosmosException ex) {
-        //    _logger.LogError(ex, "CosmosException: Status={StatusCode}, Message={Message}", ex.StatusCode, ex.Message);
-        //    var errorRes = req.CreateResponse(HttpStatusCode.InternalServerError);
-        //    await errorRes.WriteAsJsonAsync(new { error = ex.Message });
-        //    return errorRes;
-        //}
-        //catch (Exception ex) {
-        //    _logger.LogError(ex, "Unexpected error");
-        //    var errorRes = req.CreateResponse(HttpStatusCode.InternalServerError);
-        //    await errorRes.WriteAsJsonAsync(new { error = ex.Message });
-        //    return errorRes;
-        //}
-
-        var updated = doc with {
-            viewCount = doc.viewCount + 1,
-            lastUpdated = DateTimeOffset.UtcNow.ToString("O")
-        };
+        var query = HttpUtility.ParseQueryString(req.Url.Query);
+        var pageId = ( query["pageId"] ?? "home" ).ToString();
+        var id = $"{pageId}-page-counter";
 
         try {
-            //var upsert = await container.UpsertItemAsync(updated, new PartitionKey(pageId));
-           // _logger.LogInformation("Upsert successful: {Doc}", upsert.Resource);
+            CounterDoc? doc = await _dbContext.Counters.FindAsync(id, pageId);  // Uses partition key
+            if (doc == null) {
+                doc = new CounterDoc(id, pageId, 0, DateTimeOffset.UtcNow.ToString("O"));
+                _dbContext.Counters.Add(doc);
+            }
+            else {
+                doc = doc with { ViewCount = doc.ViewCount + 1, LastUpdated = DateTimeOffset.UtcNow.ToString("O") };
+                _dbContext.Counters.Update(doc);
+            }
 
+            await _dbContext.SaveChangesAsync();
             var res = req.CreateResponse(HttpStatusCode.OK);
-            // await res.WriteAsJsonAsync(upsert.Resource);
+            await res.WriteAsJsonAsync(doc);
             return res;
         }
         catch (Exception ex) {
-            _logger.LogError(ex, "Upsert failed");
+            _logger.LogError(ex, "Error processing counter");
             var errorRes = req.CreateResponse(HttpStatusCode.InternalServerError);
             await errorRes.WriteAsJsonAsync(new { error = ex.Message });
             return errorRes;

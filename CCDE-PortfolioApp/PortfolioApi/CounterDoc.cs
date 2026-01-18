@@ -2,15 +2,15 @@
 
 public record CounterDoc {
     public CounterDoc(string id, string pageId, int viewCount, string? lastUpdated) {
-        this.id = id;
-        this.pageId = pageId;
-        this.viewCount = viewCount;
-        this.lastUpdated = lastUpdated;
+        this.Id = id;
+        this.PageId = pageId;
+        this.ViewCount = viewCount;
+        this.LastUpdated = lastUpdated;
     }
 
-    public string id { get; init; }
-    public string pageId { get; init; }
-    public int viewCount { get; init; }
-    public string? lastUpdated { get; init; }
+    public string Id { get; set; }
+    public string PageId { get; set; }
+    public int ViewCount { get; set; }
+    public string? LastUpdated { get; set; }
 
 }
