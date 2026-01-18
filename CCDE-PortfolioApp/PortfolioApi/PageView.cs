@@ -28,17 +28,21 @@ public class PageView {
         var id = $"{pageId}-page-counter";
 
         try {
-            CounterDoc? doc = await _dbContext.Counters.FindAsync(id, pageId);  // Uses partition key
+            _logger.LogInformation("Querying for id={Id}, pageId={PageId}", id, pageId);
+            var doc = await _dbContext.Counters.FindAsync(id, pageId);
+            _logger.LogInformation("Found doc: {Doc}", doc != null ? "exists" : "null");
+
             if (doc == null) {
                 doc = new CounterDoc(id, pageId, 0, DateTimeOffset.UtcNow.ToString("O"));
                 _dbContext.Counters.Add(doc);
+                _logger.LogInformation("Added new doc");
             }
             else {
                 doc = doc with { ViewCount = doc.ViewCount + 1, LastUpdated = DateTimeOffset.UtcNow.ToString("O") };
                 _dbContext.Counters.Update(doc);
+                _logger.LogInformation("Updated existing doc");
             }
 
-            await _dbContext.SaveChangesAsync();
             var res = req.CreateResponse(HttpStatusCode.OK);
             await res.WriteAsJsonAsync(doc);
             return res;
