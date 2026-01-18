@@ -36,7 +36,7 @@ public class PageView {
             _logger.LogInformation("Querying for id={Id}, pageId={PageId}", id, pageId);
             var doc = await _dbContext.Counters
                 .WithPartitionKey(pageId) 
-                .FirstOrDefaultAsync(x => x.id == id);
+                .FirstOrDefaultAsync(x => x.Id == id);
 
             _logger.LogInformation("Found doc: {Doc}", doc != null ? "exists" : "null");
 
@@ -46,7 +46,7 @@ public class PageView {
                 _logger.LogInformation("Added new doc");
             }
             else {
-                doc = doc with { viewCount = doc.viewCount + 1, lastUpdated = DateTimeOffset.UtcNow.ToString("O") };
+                doc = doc with { ViewCount = doc.ViewCount + 1, LastUpdated = DateTimeOffset.UtcNow.ToString("O") };
                 _dbContext.Counters.Update(doc);
                 _logger.LogInformation("Updated existing doc");
             }

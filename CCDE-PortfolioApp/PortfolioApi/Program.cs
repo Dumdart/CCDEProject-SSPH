@@ -20,6 +20,10 @@ builder.Services
     .AddApplicationInsightsTelemetryWorkerService()
     .ConfigureFunctionsApplicationInsights();
 
+builder.Services.ConfigureHttpJsonOptions(options => {
+    options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+});
+
 builder.Services.AddDbContext<DatabaseContext>(options => {
     var endpoint = Environment.GetEnvironmentVariable("COSMOS_ENDPOINT")
                    ?? throw new InvalidOperationException("COSMOS_ENDPOINT missing.");
