@@ -14,11 +14,11 @@ namespace PortfolioApi {
             var containerId = Environment.GetEnvironmentVariable("COSMOS_CONTAINER_ID");
 
             modelBuilder.Entity<CounterDoc>()
-                .ToContainer(containerId) 
-                .HasPartitionKey(x => x.PageId);  
+                .ToContainer(containerId)
+                .HasPartitionKey(x => x.PageId)
+                .HasNoDiscriminator();
             modelBuilder.Entity<CounterDoc>()
                 .HasKey(x => x.Id);
         }
-        
     }
 }
