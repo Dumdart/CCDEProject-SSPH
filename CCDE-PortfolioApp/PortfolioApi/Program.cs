@@ -9,6 +9,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using PortfolioApi;
+using System.Text.Json;
+
 
 var builder = FunctionsApplication.CreateBuilder(args);
 

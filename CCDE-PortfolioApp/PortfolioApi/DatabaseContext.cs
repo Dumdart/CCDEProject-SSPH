@@ -15,10 +15,10 @@ namespace PortfolioApi {
 
             modelBuilder.Entity<CounterDoc>()
                 .ToContainer(containerId)
-                .HasPartitionKey(x => x.PageId)
+                .HasPartitionKey(x => x.pageId)
                 .HasNoDiscriminator();
             modelBuilder.Entity<CounterDoc>()
-                .HasKey(x => x.Id);
+                .HasKey(x => x.id);
         }
     }
 }
