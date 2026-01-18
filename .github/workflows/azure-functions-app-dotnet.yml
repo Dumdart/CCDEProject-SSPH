@@ -24,7 +24,7 @@ jobs:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Publish function project
-        shell: pwshl
+        shell: pwsh
         run: |
           pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
           dotnet publish --configuration Release --output ./publish --no-self-contained
