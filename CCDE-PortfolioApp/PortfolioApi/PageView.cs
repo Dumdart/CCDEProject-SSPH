@@ -1,12 +1,13 @@
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Net;
 using System.Web;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.Azure.Functions.Worker.Http;
 
 namespace PortfolioApi;
 
@@ -27,9 +28,16 @@ public class PageView {
         var pageId = ( query["pageId"] ?? "home" ).ToString();
         var id = $"{pageId}-page-counter";
 
+        _logger.LogInformation("Cosmos: DB={Db}, Container={Container}",
+        Environment.GetEnvironmentVariable("COSMOS_DATABASE_ID"),
+        Environment.GetEnvironmentVariable("COSMOS_CONTAINER_ID"));
+
         try {
             _logger.LogInformation("Querying for id={Id}, pageId={PageId}", id, pageId);
-            var doc = await _dbContext.Counters.FindAsync(id, pageId);
+            var doc = await _dbContext.Counters
+                .WithPartitionKey(pageId) 
+                .FirstOrDefaultAsync(x => x.Id == id);
+
             _logger.LogInformation("Found doc: {Doc}", doc != null ? "exists" : "null");
 
             if (doc == null) {
