@@ -88,3 +88,8 @@ wwwroot/
 obj/
 bin/
 /.vs
+
+# Terraform
+IaC.terraform/.terraform/
+*.tfstate*
+*.tfvars
