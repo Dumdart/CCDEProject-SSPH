@@ -1,4 +1,4 @@
-package com.example.ccde_sshp;
+package ui.Main.ccde_sshp;
 
 import org.junit.Test;
 
