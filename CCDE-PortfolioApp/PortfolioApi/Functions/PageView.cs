@@ -21,16 +21,12 @@ public class PageView {
     }
 
     [Function("PageView")]
-    public async Task<HttpResponseData> Run([HttpTrigger(AuthorizationLevel.Function, "get", Route = "visitor-count")] HttpRequestData req) {
+    public async Task<HttpResponseData> Run([HttpTrigger(AuthorizationLevel.Function, "get", Route = "pageview/visitor-count")] HttpRequestData req) {
         _logger.LogInformation("PageView called with URL: {Url}", req.Url);
-
+ 
         var query = HttpUtility.ParseQueryString(req.Url.Query);
         var pageId = ( query["pageId"] ?? "home" ).ToString();
         var id = $"{pageId}-page-counter";
-
-        _logger.LogInformation("Cosmos: DB={Db}, Container={Container}",
-        Environment.GetEnvironmentVariable("COSMOS_DATABASE_ID"),
-        Environment.GetEnvironmentVariable("COSMOS_CONTAINER_ID"));
 
         try {
             _logger.LogInformation("Querying for id={Id}, pageId={PageId}", id, pageId);

@@ -1,5 +1,6 @@
 using Azure.Core;
 using Azure.Identity;
+using Google.GenAI;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Builder;
@@ -38,6 +39,11 @@ builder.Services.AddDbContext<DatabaseContext>(options => {
         .EnableDetailedErrors()           
         .EnableSensitiveDataLogging()
         .LogTo(Console.WriteLine, LogLevel.Debug);
+});
+
+// Gemini API client
+builder.Services.AddScoped(sp => {
+    return new Client();
 });
 
 builder.Build().Run();
