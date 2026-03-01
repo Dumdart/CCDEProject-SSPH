@@ -15,15 +15,17 @@ using System.Text.Json;
 
 var builder = FunctionsApplication.CreateBuilder(args);
 
-builder.ConfigureFunctionsWebApplication();
+builder.Services.AddCors(options => {
+    options.AddPolicy("AllowLocalDev", policy => {
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 
 builder.Services
     .AddApplicationInsightsTelemetryWorkerService()
     .ConfigureFunctionsApplicationInsights();
-
-builder.Services.ConfigureHttpJsonOptions(options => {
-    options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-});
 
 builder.Services.AddDbContext<DatabaseContext>(options => {
     var endpoint = Environment.GetEnvironmentVariable("COSMOS_ENDPOINT")
@@ -42,8 +44,12 @@ builder.Services.AddDbContext<DatabaseContext>(options => {
 });
 
 // Gemini API client
+var key = Environment.GetEnvironmentVariable("GEMINI_API_KEY") 
+    ?? throw new InvalidOperationException("GEMINI_API_KEY is missing.");
+
 builder.Services.AddScoped(sp => {
-    return new Client();
+    return new Client(apiKey: key);
 });
+
 
 builder.Build().Run();

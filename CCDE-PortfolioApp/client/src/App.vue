@@ -1,29 +1,29 @@
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
+import type { AnalyticsResponse, ChatRequest, ChatResponse, Message } from "./types";
 
 // Environment variables
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 const apiKey = import.meta.env.VITE_API_KEY;
-
 // Analytics state
-const viewCount = ref(0);
-const lastUpdated = ref("");
-const analyticsLoading = ref(false);
-const analyticsError = ref("");
-const pageId = ref("home");
+const viewCount = ref<number>(0);
+const lastUpdated = ref<string>("");
+const analyticsLoading = ref<boolean>(false);
+const analyticsError = ref<string>("");
+const pageId = ref<string>("home");
 
 // Chat state
-const messages = ref([]);
-const userInput = ref("");
-const chatLoading = ref(false);
-const chatError = ref("");
+const messages = ref<Message[]>([]);
+const userInput = ref<string>("");
+const chatLoading = ref<boolean>(false);
+const chatError = ref<string>("");
 
 // UI state
-const activeTab = ref("dashboard"); // dashboard, chat, both
-const animateCounter = ref(false);
+const activeTab = ref<'dashboard' | 'chat' | 'both'>("dashboard");
+const animateCounter = ref<boolean>(false);
 
 // Fetch analytics
-async function fetchAnalytics() {
+async function fetchAnalytics(): Promise<void> {
   analyticsLoading.value = true;
   analyticsError.value = "";
   const previousCount = viewCount.value;
@@ -37,24 +37,24 @@ async function fetchAnalytics() {
       throw new Error(`HTTP ${res.status}: ${res.statusText}`);
     }
     
-    const data = await res.json();
-    viewCount.value = data.viewCount ?? 0;
-    lastUpdated.value = data.lastUpdated ?? "";
+    const data = (await res.json()) as AnalyticsResponse;
+    viewCount.value = data.ViewCount ?? 0;
+    lastUpdated.value = data.LastUpdated ?? "";
     
     // Trigger animation if count changed
     if (previousCount !== viewCount.value && previousCount > 0) {
       animateCounter.value = true;
       setTimeout(() => (animateCounter.value = false), 600);
     }
-  } catch (e) {
-    analyticsError.value = e.message;
+  } catch (e: any) {
+    analyticsError.value = e.message ?? "Unknown error";
   } finally {
     analyticsLoading.value = false;
   }
 }
 
 // Send chat message
-async function sendMessage() {
+async function sendMessage(): Promise<void> {
   if (!userInput.value.trim()) return;
   
   const userMsg = userInput.value.trim();
@@ -64,23 +64,24 @@ async function sendMessage() {
   chatError.value = "";
   
   try {
+    const request: ChatRequest = { Message: userMsg };
     const res = await fetch(`${apiBaseUrl}/api/llm-chat/chat?code=${apiKey}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: userMsg }),
+      body: JSON.stringify(request),
     });
     
     if (!res.ok) {
       throw new Error(`HTTP ${res.status}: ${res.statusText}`);
     }
     
-    const data = await res.json();
+    const data = (await res.json()) as ChatResponse;
     messages.value.push({ 
       role: "assistant", 
-      content: data.response ?? "No response from AI" 
+      content: data.Response ?? "No response from AI" 
     });
-  } catch (e) {
-    chatError.value = e.message;
+  } catch (e: any) {
+    chatError.value = e.message ?? "Unknown error";
     messages.value.push({ 
       role: "error", 
       content: `Error: ${e.message}` 
@@ -91,7 +92,7 @@ async function sendMessage() {
 }
 
 // Quick action: refresh + ask AI about stats
-async function askAboutStats() {
+async function askAboutStats(): Promise<void> {
   await fetchAnalytics();
   userInput.value = `I currently have ${viewCount.value} page views. Can you give me encouraging feedback and tips to increase engagement?`;
   await sendMessage();

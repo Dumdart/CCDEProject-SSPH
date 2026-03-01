@@ -58,7 +58,7 @@ public class LlmChat
             );
 
             var res = req.CreateResponse(HttpStatusCode.OK);
-            await res.WriteAsJsonAsync(new { response = response?.Candidates?[0]?.Content?.Parts?[0].Text });
+            await res.WriteAsJsonAsync(new ChatResponse { Response = response?.Candidates?[0]?.Content?.Parts?[0].Text });
             return res;
         }
         catch (Exception ex)
