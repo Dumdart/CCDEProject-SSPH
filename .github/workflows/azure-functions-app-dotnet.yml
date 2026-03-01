@@ -53,7 +53,8 @@ jobs:
               COSMOS_ENDPOINT=$env:COSMOS_ENDPOINT `
               COSMOS_KEY=$env:COSMOS_KEY `
               COSMOS_DATABASE_ID=$env:COSMOS_DATABASE_ID `
-              COSMOS_CONTAINER_ID=$env:COSMOS_CONTAINER_ID
+              COSMOS_CONTAINER_ID=$env:COSMOS_CONTAINER_ID `            
+              GEMINI_API_KEY=$env:GEMINI_API_KEY
         env:    
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           COSMOS_ENDPOINT: ${{ secrets.COSMOS_ENDPOINT }} 

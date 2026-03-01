@@ -50,8 +50,7 @@ public class LlmChat
         // TODO: Images
         // https://ai.google.dev/gemini-api/docs/image-understanding?hl=de
 
-        try
-        {
+        try {
             var response = await _geminiClient.Models.GenerateContentAsync(
                 model: "gemini-2.5-flash",
                 contents
