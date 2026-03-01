@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
-import type { AnalyticsResponse, ChatRequest, ChatResponse, Message } from "./types";
+import type { AnalyticsResponse, ChatRequest, ChatResponse, Message, UploadedFile } from "./types";
 
-// Environment variables
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
-const apiKey = import.meta.env.VITE_API_KEY;
+// Configuration
+const config = {  
+  apiBaseUrl: import.meta.env.VITE_API_BASE_URL,
+  apiKey:import.meta.env.VITE_API_KEY,
+};
+
 // Analytics state
 const viewCount = ref<number>(0);
 const lastUpdated = ref<string>("");
@@ -18,8 +21,13 @@ const userInput = ref<string>("");
 const chatLoading = ref<boolean>(false);
 const chatError = ref<string>("");
 
+// Document analysis state
+const uploadedFiles = ref<UploadedFile[]>([]);
+const analyzingDoc = ref<boolean>(false);
+const analysisResult = ref<string>("");
+
 // UI state
-const activeTab = ref<'dashboard' | 'chat' | 'both'>("dashboard");
+const activeTab = ref<"dashboard" | "chat" | "documents" | "split">("dashboard");
 const animateCounter = ref<boolean>(false);
 
 // Fetch analytics
@@ -27,21 +35,20 @@ async function fetchAnalytics(): Promise<void> {
   analyticsLoading.value = true;
   analyticsError.value = "";
   const previousCount = viewCount.value;
-  
+
   try {
     const res = await fetch(
-      `${apiBaseUrl}/api/pageview/visitor-count?pageId=${pageId.value}&code=${apiKey}`
+      `${config.apiBaseUrl}/api/pageview/visitor-count?pageId=${pageId.value}&code=${config.apiKey}`
     );
-    
+
     if (!res.ok) {
       throw new Error(`HTTP ${res.status}: ${res.statusText}`);
     }
-    
+
     const data = (await res.json()) as AnalyticsResponse;
     viewCount.value = data.ViewCount ?? 0;
     lastUpdated.value = data.LastUpdated ?? "";
-    
-    // Trigger animation if count changed
+
     if (previousCount !== viewCount.value && previousCount > 0) {
       animateCounter.value = true;
       setTimeout(() => (animateCounter.value = false), 600);
@@ -56,25 +63,25 @@ async function fetchAnalytics(): Promise<void> {
 // Send chat message
 async function sendMessage(): Promise<void> {
   if (!userInput.value.trim()) return;
-  
+
   const userMsg = userInput.value.trim();
   messages.value.push({ role: "user", content: userMsg });
   userInput.value = "";
   chatLoading.value = true;
   chatError.value = "";
-  
+
   try {
     const request: ChatRequest = { Message: userMsg };
-    const res = await fetch(`${apiBaseUrl}/api/llm-chat/chat?code=${apiKey}`, {
+    const res = await fetch(`${config.apiBaseUrl}/api/llm-chat/chat?code=${config.apiKey}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
     });
-    
+
     if (!res.ok) {
       throw new Error(`HTTP ${res.status}: ${res.statusText}`);
     }
-    
+
     const data = (await res.json()) as ChatResponse;
     messages.value.push({ 
       role: "assistant", 
@@ -91,11 +98,83 @@ async function sendMessage(): Promise<void> {
   }
 }
 
-// Quick action: refresh + ask AI about stats
+// Handle file upload
+function handleFileUpload(event: Event): void {
+  const target = event.target as HTMLInputElement;
+  const files = target.files;
+
+  if (!files || files.length === 0) return;
+
+  Array.from(files).forEach(file => {
+    if (file.size > 10 * 1024 * 1024) {
+      alert(`File ${file.name} is too large (max 10MB)`);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      uploadedFiles.value.push({
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        content: e.target?.result || null
+      });
+    };
+    reader.readAsText(file);
+  });
+
+  target.value = "";
+}
+
+// Remove uploaded file
+function removeFile(index: number): void {
+  uploadedFiles.value.splice(index, 1);
+}
+
+// Analyze document
+async function analyzeDocument(file: UploadedFile): Promise<void> {
+  analyzingDoc.value = true;
+  analysisResult.value = "";
+
+  try {
+    const prompt = `Please analyze this document:
+
+Filename: ${file.name}
+Content:
+${file.content}`;
+    const request: ChatRequest = { Message: prompt };
+
+    const res = await fetch(`${config.apiBaseUrl}/api/llm-chat/chat?code=${config.apiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    });
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    }
+
+    const data = (await res.json()) as ChatResponse;
+    analysisResult.value = data.Response ?? "No analysis available";
+  } catch (e: any) {
+    analysisResult.value = `Error: ${e.message}`;
+  } finally {
+    analyzingDoc.value = false;
+  }
+}
+
+// Quick action: ask about stats
 async function askAboutStats(): Promise<void> {
   await fetchAnalytics();
-  userInput.value = `I currently have ${viewCount.value} page views. Can you give me encouraging feedback and tips to increase engagement?`;
+  userInput.value = `I currently have ${viewCount.value} page views. Can you give me insights and tips to increase engagement?`;
   await sendMessage();
+}
+
+// Format file size
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+  return (bytes / (1024 * 1024)).toFixed(1) + " MB";
 }
 
 // Format timestamp
@@ -113,10 +192,9 @@ const formattedTime = computed(() => {
 
 onMounted(() => {
   fetchAnalytics();
-  // Add welcome message
   messages.value.push({
     role: "assistant",
-    content: "👋 Hi! I'm your AI portfolio assistant. Ask me anything about web development, career advice, or your analytics!",
+    content: "Hi! I'm your AI assistant. Ask me anything about web development, career advice, or your analytics!",
   });
 });
 </script>
@@ -125,7 +203,7 @@ onMounted(() => {
   <div class="app-container">
     <!-- Header -->
     <header class="header">
-      <h1>📊 Portfolio Hub</h1>
+      <h1>Portfolio Hub</h1>
       <div class="tab-switcher">
         <button 
           @click="activeTab = 'dashboard'" 
@@ -140,8 +218,14 @@ onMounted(() => {
           AI Assistant
         </button>
         <button 
-          @click="activeTab = 'both'" 
-          :class="{ active: activeTab === 'both' }"
+          @click="activeTab = 'documents'" 
+          :class="{ active: activeTab === 'documents' }"
+        >
+          Documents
+        </button>
+        <button 
+          @click="activeTab = 'split'" 
+          :class="{ active: activeTab === 'split' }"
         >
           Split View
         </button>
@@ -151,56 +235,56 @@ onMounted(() => {
     <!-- Main Content -->
     <main class="main-content" :class="`layout-${activeTab}`">
       <!-- Analytics Panel -->
-      <section v-show="activeTab === 'dashboard' || activeTab === 'both'" class="panel analytics-panel">
+      <section v-show="activeTab === 'dashboard' || activeTab === 'split'" class="panel analytics-panel">
         <div class="panel-header">
-          <h2>📈 Live Analytics</h2>
+          <h2>Live Analytics</h2>
           <button @click="fetchAnalytics" :disabled="analyticsLoading" class="btn-refresh">
-            {{ analyticsLoading ? "⏳" : "🔄" }} Refresh
+            {{ analyticsLoading ? "Loading..." : "Refresh" }}
           </button>
         </div>
 
         <div v-if="analyticsError" class="error-box">
-          ⚠️ {{ analyticsError }}
+          Error: {{ analyticsError }}
         </div>
 
         <div v-else class="stats-grid">
           <div class="stat-card" :class="{ pulse: animateCounter }">
-            <div class="stat-icon">👁️</div>
             <div class="stat-value">{{ viewCount.toLocaleString() }}</div>
             <div class="stat-label">Total Views</div>
           </div>
 
           <div class="stat-card">
-            <div class="stat-icon">🕒</div>
             <div class="stat-value-small">{{ formattedTime }}</div>
             <div class="stat-label">Last Updated</div>
           </div>
 
           <div class="stat-card">
-            <div class="stat-icon">📄</div>
             <div class="stat-value-small">{{ pageId }}</div>
-            <div class="stat-label">Page ID</div>
+            <div class="stat-label">Current Page</div>
           </div>
         </div>
 
         <div class="quick-actions">
           <h3>Quick Actions</h3>
           <button @click="askAboutStats" class="btn-action">
-            🤖 Ask AI About My Stats
+            Ask AI About Stats
           </button>
           <button @click="pageId = 'home'; fetchAnalytics()" class="btn-action">
-            🏠 View Home Stats
+            View Home Stats
           </button>
           <button @click="pageId = 'portfolio'; fetchAnalytics()" class="btn-action">
-            💼 View Portfolio Stats
+            View Portfolio Stats
+          </button>
+          <button @click="pageId = 'projects'; fetchAnalytics()" class="btn-action">
+            View Projects Stats
           </button>
         </div>
       </section>
 
       <!-- Chat Panel -->
-      <section v-show="activeTab === 'chat' || activeTab === 'both'" class="panel chat-panel">
+      <section v-show="activeTab === 'chat' || activeTab === 'split'" class="panel chat-panel">
         <div class="panel-header">
-          <h2>💬 AI Assistant</h2>
+          <h2>AI Assistant</h2>
           <button @click="messages = []" class="btn-clear">Clear Chat</button>
         </div>
 
@@ -210,14 +294,10 @@ onMounted(() => {
             :key="idx" 
             :class="['message', `message-${msg.role}`]"
           >
-            <div class="message-icon">
-              {{ msg.role === 'user' ? '👤' : msg.role === 'error' ? '❌' : '🤖' }}
-            </div>
             <div class="message-content">{{ msg.content }}</div>
           </div>
 
           <div v-if="chatLoading" class="message message-assistant">
-            <div class="message-icon">🤖</div>
             <div class="message-content typing">AI is thinking...</div>
           </div>
         </div>
@@ -230,11 +310,56 @@ onMounted(() => {
             class="chat-input"
           />
           <button type="submit" :disabled="chatLoading || !userInput.trim()" class="btn-send">
-            {{ chatLoading ? "⏳" : "➤" }}
+            {{ chatLoading ? "..." : "Send" }}
           </button>
         </form>
 
-        <div v-if="chatError" class="error-box">⚠️ {{ chatError }}</div>
+        <div v-if="chatError" class="error-box">Error: {{ chatError }}</div>
+      </section>
+
+      <!-- Documents Panel -->
+      <section v-show="activeTab === 'documents'" class="panel documents-panel">
+        <div class="panel-header">
+          <h2>Document Analysis</h2>
+          <label class="btn-upload">
+            Upload Files
+            <input 
+              type="file" 
+              @change="handleFileUpload" 
+              accept=".pdf,.txt,.docx,.md"
+              multiple
+              style="display: none;"
+            />
+          </label>
+        </div>
+
+        <div class="upload-info">
+          Supported formats: PDF, TXT, DOCX, MD (max 10MB per file)
+        </div>
+
+        <div v-if="uploadedFiles.length === 0" class="empty-state">
+          No documents uploaded yet. Upload files to analyze them with AI.
+        </div>
+
+        <div v-else class="files-list">
+          <div v-for="(file, idx) in uploadedFiles" :key="idx" class="file-item">
+            <div class="file-info">
+              <div class="file-name">{{ file.name }}</div>
+              <div class="file-meta">{{ formatFileSize(file.size) }}</div>
+            </div>
+            <div class="file-actions">
+              <button @click="analyzeDocument(file)" :disabled="analyzingDoc" class="btn-analyze">
+                {{ analyzingDoc ? "Analyzing..." : "Analyze" }}
+              </button>
+              <button @click="removeFile(idx)" class="btn-remove">Remove</button>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="analysisResult" class="analysis-result">
+          <h3>Analysis Result</h3>
+          <div class="result-content">{{ analysisResult }}</div>
+        </div>
       </section>
     </main>
   </div>
@@ -247,28 +372,28 @@ onMounted(() => {
 
 .app-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  color: #333;
+  background: #f5f7fa;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  color: #2c3e50;
 }
 
 .header {
-  background: rgba(255, 255, 255, 0.95);
+  background: #ffffff;
   padding: 1.5rem 2rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
   gap: 1rem;
+  border-bottom: 3px solid #3498db;
 }
 
 .header h1 {
   margin: 0;
   font-size: 1.8rem;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #2c3e50;
+  font-weight: 600;
 }
 
 .tab-switcher {
@@ -278,23 +403,24 @@ onMounted(() => {
 
 .tab-switcher button {
   padding: 0.6rem 1.2rem;
-  border: 2px solid #667eea;
-  background: white;
-  color: #667eea;
-  border-radius: 8px;
+  border: 2px solid #3498db;
+  background: #ffffff;
+  color: #3498db;
+  border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
-  transition: all 0.3s;
+  transition: all 0.2s;
+  font-size: 0.9rem;
 }
 
 .tab-switcher button.active {
-  background: #667eea;
-  color: white;
+  background: #3498db;
+  color: #ffffff;
 }
 
 .tab-switcher button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
 }
 
 .main-content {
@@ -306,22 +432,24 @@ onMounted(() => {
 }
 
 .main-content.layout-dashboard,
-.main-content.layout-chat {
+.main-content.layout-chat,
+.main-content.layout-documents {
   grid-template-columns: 1fr;
 }
 
-.main-content.layout-both {
+.main-content.layout-split {
   grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
 }
 
 .panel {
-  background: white;
-  border-radius: 16px;
+  background: #ffffff;
+  border-radius: 8px;
   padding: 2rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  border: 1px solid #e1e8ed;
 }
 
 .panel-header {
@@ -334,25 +462,29 @@ onMounted(() => {
 
 .panel-header h2 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.4rem;
+  color: #2c3e50;
+  font-weight: 600;
 }
 
 .btn-refresh,
-.btn-clear {
-  padding: 0.5rem 1rem;
+.btn-clear,
+.btn-upload {
+  padding: 0.6rem 1.2rem;
   border: none;
-  background: #667eea;
-  color: white;
-  border-radius: 8px;
+  background: #3498db;
+  color: #ffffff;
+  border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
-  transition: all 0.3s;
+  transition: all 0.2s;
+  font-size: 0.9rem;
 }
 
 .btn-refresh:hover,
-.btn-clear:hover {
-  background: #5568d3;
-  transform: scale(1.05);
+.btn-clear:hover,
+.btn-upload:hover {
+  background: #2980b9;
 }
 
 .btn-refresh:disabled {
@@ -367,15 +499,17 @@ onMounted(() => {
 }
 
 .stat-card {
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  border-radius: 12px;
+  background: #f8f9fa;
+  border: 2px solid #e1e8ed;
+  border-radius: 8px;
   padding: 1.5rem;
   text-align: center;
-  transition: transform 0.3s;
+  transition: transform 0.2s;
 }
 
 .stat-card:hover {
-  transform: translateY(-5px);
+  transform: translateY(-2px);
+  border-color: #3498db;
 }
 
 .stat-card.pulse {
@@ -384,30 +518,27 @@ onMounted(() => {
 
 @keyframes pulse {
   0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-}
-
-.stat-icon {
-  font-size: 2.5rem;
-  margin-bottom: 0.5rem;
+  50% { transform: scale(1.05); }
 }
 
 .stat-value {
   font-size: 2.5rem;
   font-weight: bold;
-  color: #667eea;
+  color: #3498db;
+  margin-bottom: 0.5rem;
 }
 
 .stat-value-small {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 600;
-  color: #555;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
 }
 
 .stat-label {
   font-size: 0.9rem;
-  color: #666;
-  margin-top: 0.5rem;
+  color: #7f8c8d;
+  font-weight: 500;
 }
 
 .quick-actions {
@@ -418,6 +549,7 @@ onMounted(() => {
 .quick-actions h3 {
   margin: 0 0 1rem 0;
   font-size: 1.1rem;
+  color: #2c3e50;
 }
 
 .btn-action {
@@ -425,18 +557,19 @@ onMounted(() => {
   width: 100%;
   padding: 0.8rem;
   margin-bottom: 0.5rem;
-  border: 2px solid #764ba2;
-  background: white;
-  color: #764ba2;
-  border-radius: 8px;
+  border: 2px solid #3498db;
+  background: #ffffff;
+  color: #3498db;
+  border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
-  transition: all 0.3s;
+  transition: all 0.2s;
+  font-size: 0.9rem;
 }
 
 .btn-action:hover {
-  background: #764ba2;
-  color: white;
+  background: #3498db;
+  color: #ffffff;
 }
 
 .chat-panel {
@@ -452,39 +585,37 @@ onMounted(() => {
   flex-direction: column;
   gap: 1rem;
   padding-right: 0.5rem;
+  min-height: 400px;
 }
 
 .message {
   display: flex;
-  gap: 0.8rem;
   align-items: flex-start;
 }
 
 .message-user {
-  flex-direction: row-reverse;
-}
-
-.message-icon {
-  font-size: 1.8rem;
-  flex-shrink: 0;
+  justify-content: flex-end;
 }
 
 .message-content {
-  background: #f5f5f5;
-  padding: 0.8rem 1.2rem;
-  border-radius: 12px;
-  max-width: 70%;
-  line-height: 1.5;
+  background: #f8f9fa;
+  padding: 0.9rem 1.2rem;
+  border-radius: 8px;
+  max-width: 75%;
+  line-height: 1.6;
+  border: 1px solid #e1e8ed;
 }
 
 .message-user .message-content {
-  background: #667eea;
-  color: white;
+  background: #3498db;
+  color: #ffffff;
+  border-color: #3498db;
 }
 
 .message-error .message-content {
-  background: #ffebee;
-  color: #c62828;
+  background: #fee;
+  color: #c00;
+  border-color: #fcc;
 }
 
 .typing {
@@ -504,32 +635,33 @@ onMounted(() => {
 
 .chat-input {
   flex: 1;
-  padding: 0.8rem 1.2rem;
-  border: 2px solid #ddd;
-  border-radius: 24px;
+  padding: 0.9rem 1.2rem;
+  border: 2px solid #e1e8ed;
+  border-radius: 6px;
   font-size: 1rem;
-  transition: border 0.3s;
+  transition: border 0.2s;
+  font-family: inherit;
 }
 
 .chat-input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #3498db;
 }
 
 .btn-send {
-  padding: 0.8rem 1.5rem;
+  padding: 0.9rem 1.8rem;
   border: none;
-  background: #667eea;
-  color: white;
-  border-radius: 24px;
+  background: #3498db;
+  color: #ffffff;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 1.2rem;
-  transition: all 0.3s;
+  font-weight: 600;
+  transition: all 0.2s;
+  font-size: 0.9rem;
 }
 
 .btn-send:hover:not(:disabled) {
-  background: #5568d3;
-  transform: scale(1.05);
+  background: #2980b9;
 }
 
 .btn-send:disabled {
@@ -537,26 +669,143 @@ onMounted(() => {
   cursor: not-allowed;
 }
 
-.error-box {
-  background: #ffebee;
-  color: #c62828;
+.upload-info {
+  background: #f8f9fa;
+  padding: 0.8rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: #7f8c8d;
+  border: 1px solid #e1e8ed;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #7f8c8d;
+  font-size: 1rem;
+}
+
+.files-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.file-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   padding: 1rem;
-  border-radius: 8px;
-  border-left: 4px solid #c62828;
+  background: #f8f9fa;
+  border: 2px solid #e1e8ed;
+  border-radius: 6px;
+  transition: border-color 0.2s;
+}
+
+.file-item:hover {
+  border-color: #3498db;
+}
+
+.file-info {
+  flex: 1;
+}
+
+.file-name {
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 0.3rem;
+}
+
+.file-meta {
+  font-size: 0.85rem;
+  color: #7f8c8d;
+}
+
+.file-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-analyze,
+.btn-remove {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+  font-size: 0.85rem;
+}
+
+.btn-analyze {
+  background: #3498db;
+  color: #ffffff;
+}
+
+.btn-analyze:hover:not(:disabled) {
+  background: #2980b9;
+}
+
+.btn-analyze:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-remove {
+  background: #e74c3c;
+  color: #ffffff;
+}
+
+.btn-remove:hover {
+  background: #c0392b;
+}
+
+.analysis-result {
+  margin-top: 1rem;
+  padding: 1.5rem;
+  background: #f8f9fa;
+  border: 2px solid #3498db;
+  border-radius: 6px;
+}
+
+.analysis-result h3 {
+  margin: 0 0 1rem 0;
+  color: #2c3e50;
+  font-size: 1.1rem;
+}
+
+.result-content {
+  line-height: 1.6;
+  color: #2c3e50;
+  white-space: pre-wrap;
+}
+
+.error-box {
+  background: #fee;
+  color: #c00;
+  padding: 1rem;
+  border-radius: 6px;
+  border: 2px solid #fcc;
+  font-weight: 500;
 }
 
 @media (max-width: 768px) {
-  .main-content.layout-both {
+  .main-content.layout-split {
     grid-template-columns: 1fr;
   }
-  
+
   .header {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .tab-switcher {
-    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .tab-switcher button {
+    flex: 1;
+    min-width: 100px;
   }
 }
 </style>
