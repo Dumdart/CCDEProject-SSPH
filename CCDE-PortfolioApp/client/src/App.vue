@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
 import type { AnalyticsResponse, ChatRequest, ChatResponse, Message, UploadedFile } from "./types";
+import ChatMessages from "./components/ChatMessages.vue";
 
 // Configuration
-const config = {  
+const config = {
   apiBaseUrl: import.meta.env.VITE_API_BASE_URL,
-  apiKey:import.meta.env.VITE_API_KEY,
+  apiKey: import.meta.env.VITE_API_KEY,
 };
 
 // Analytics state
@@ -83,15 +84,15 @@ async function sendMessage(): Promise<void> {
     }
 
     const data = (await res.json()) as ChatResponse;
-    messages.value.push({ 
-      role: "assistant", 
-      content: data.Response ?? "No response from AI" 
+    messages.value.push({
+      role: "assistant",
+      content: data.Response ?? "No response from AI"
     });
   } catch (e: any) {
     chatError.value = e.message ?? "Unknown error";
-    messages.value.push({ 
-      role: "error", 
-      content: `Error: ${e.message}` 
+    messages.value.push({
+      role: "error",
+      content: `Error: ${e.message}`
     });
   } finally {
     chatLoading.value = false;
@@ -205,28 +206,16 @@ onMounted(() => {
     <header class="header">
       <h1>Portfolio Hub</h1>
       <div class="tab-switcher">
-        <button 
-          @click="activeTab = 'dashboard'" 
-          :class="{ active: activeTab === 'dashboard' }"
-        >
+        <button @click="activeTab = 'dashboard'" :class="{ active: activeTab === 'dashboard' }">
           Analytics
         </button>
-        <button 
-          @click="activeTab = 'chat'" 
-          :class="{ active: activeTab === 'chat' }"
-        >
+        <button @click="activeTab = 'chat'" :class="{ active: activeTab === 'chat' }">
           AI Assistant
         </button>
-        <button 
-          @click="activeTab = 'documents'" 
-          :class="{ active: activeTab === 'documents' }"
-        >
+        <button @click="activeTab = 'documents'" :class="{ active: activeTab === 'documents' }">
           Documents
         </button>
-        <button 
-          @click="activeTab = 'split'" 
-          :class="{ active: activeTab === 'split' }"
-        >
+        <button @click="activeTab = 'split'" :class="{ active: activeTab === 'split' }">
           Split View
         </button>
       </div>
@@ -288,27 +277,10 @@ onMounted(() => {
           <button @click="messages = []" class="btn-clear">Clear Chat</button>
         </div>
 
-        <div class="chat-messages">
-          <div 
-            v-for="(msg, idx) in messages" 
-            :key="idx" 
-            :class="['message', `message-${msg.role}`]"
-          >
-            <div class="message-content">{{ msg.content }}</div>
-          </div>
-
-          <div v-if="chatLoading" class="message message-assistant">
-            <div class="message-content typing">AI is thinking...</div>
-          </div>
-        </div>
+        <ChatMessages :messages="messages" :is-thinking="chatLoading" />
 
         <form @submit.prevent="sendMessage" class="chat-input-form">
-          <input 
-            v-model="userInput" 
-            placeholder="Ask me anything..." 
-            :disabled="chatLoading"
-            class="chat-input"
-          />
+          <input v-model="userInput" placeholder="Ask me anything..." :disabled="chatLoading" class="chat-input" />
           <button type="submit" :disabled="chatLoading || !userInput.trim()" class="btn-send">
             {{ chatLoading ? "..." : "Send" }}
           </button>
@@ -317,19 +289,15 @@ onMounted(() => {
         <div v-if="chatError" class="error-box">Error: {{ chatError }}</div>
       </section>
 
+
       <!-- Documents Panel -->
       <section v-show="activeTab === 'documents'" class="panel documents-panel">
         <div class="panel-header">
           <h2>Document Analysis</h2>
           <label class="btn-upload">
             Upload Files
-            <input 
-              type="file" 
-              @change="handleFileUpload" 
-              accept=".pdf,.txt,.docx,.md"
-              multiple
-              style="display: none;"
-            />
+            <input type="file" @change="handleFileUpload" accept=".pdf,.txt,.docx,.md" multiple
+              style="display: none;" />
           </label>
         </div>
 
@@ -517,8 +485,15 @@ onMounted(() => {
 }
 
 @keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+  }
 }
 
 .stat-value {
@@ -623,8 +598,15 @@ onMounted(() => {
 }
 
 @keyframes typing {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .chat-input-form {
