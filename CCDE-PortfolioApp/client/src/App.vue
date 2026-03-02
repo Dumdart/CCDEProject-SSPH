@@ -145,7 +145,7 @@ Content:
 ${file.content}`;
     const request: ChatRequest = { Message: prompt };
 
-    const res = await fetch(`${config.apiBaseUrl}/api/llm-chat/chat?&code=${config.apiKey}`, {
+    const res = await fetch(`${config.apiBaseUrl}/api/llm-chat/chat?code=${config.apiKey}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
