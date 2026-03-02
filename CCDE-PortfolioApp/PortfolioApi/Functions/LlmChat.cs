@@ -52,7 +52,7 @@ public class LlmChat
 
         try {
             var response = await _geminiClient.Models.GenerateContentAsync(
-                model: "gemini-2.5-flash",
+                model: "gemini-3-flash-preview",
                 contents
             );
 
