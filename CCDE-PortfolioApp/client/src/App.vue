@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
-import type { AnalyticsResponse, ChatRequest, ChatResponse, Message, UploadedFile } from "./types";
+import { ref, onMounted, computed, inject } from "vue";
+import type { Message, UploadedFile } from "./types";
 import ChatMessages from "./components/ChatMessages.vue";
+import { apiRepoKey, servicesKey } from "./main";
 
-// Configuration
-const config = {
-  apiBaseUrl: import.meta.env.VITE_API_BASE_URL,
-  apiKey: import.meta.env.VITE_API_KEY,
-};
+const services = inject(servicesKey)
+const apiRepo = inject(apiRepoKey)
+if (!services || !apiRepo)
+  throw new Error("Injection error");
 
+  
 // Analytics state
 const viewCount = ref<number>(0);
 const lastUpdated = ref<string>("");
@@ -19,6 +20,9 @@ const pageId = ref<string>("home");
 // Chat state
 const messages = ref<Message[]>([]);
 const userInput = ref<string>("");
+const docMessages = ref<Message[]>([]);
+const docUserInput = ref<string>("");
+
 const chatLoading = ref<boolean>(false);
 const chatError = ref<string>("");
 
@@ -38,15 +42,7 @@ async function fetchAnalytics(): Promise<void> {
   const previousCount = viewCount.value;
 
   try {
-    const res = await fetch(
-      `${config.apiBaseUrl}/api/pageview/visitor-count?pageId=${pageId.value}&code=${config.apiKey}`
-    );
-
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-    }
-
-    const data = (await res.json()) as AnalyticsResponse;
+    const data = await apiRepo!.fetchAnalytics(pageId.value);
     viewCount.value = data.ViewCount ?? 0;
     lastUpdated.value = data.LastUpdated ?? "";
 
@@ -63,41 +59,15 @@ async function fetchAnalytics(): Promise<void> {
 
 // Send chat message
 async function sendMessage(): Promise<void> {
-  if (!userInput.value.trim()) return;
-
-  const userMsg = userInput.value.trim();
-  messages.value.push({ role: "user", content: userMsg });
+  await services!.sendChatMessage(
+    userInput.value,
+    messages.value,
+    (v) => (chatLoading.value = v),
+    (e) => (chatError.value = e)
+  );
   userInput.value = "";
-  chatLoading.value = true;
-  chatError.value = "";
-
-  try {
-    const request: ChatRequest = { Message: userMsg };
-    const res = await fetch(`${config.apiBaseUrl}/api/llm-chat/chat?&code=${config.apiKey}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(request),
-    });
-
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-    }
-
-    const data = (await res.json()) as ChatResponse;
-    messages.value.push({
-      role: "assistant",
-      content: data.Response ?? "No response from AI"
-    });
-  } catch (e: any) {
-    chatError.value = e.message ?? "Unknown error";
-    messages.value.push({
-      role: "error",
-      content: `Error: ${e.message}`
-    });
-  } finally {
-    chatLoading.value = false;
-  }
 }
+
 
 // Handle file upload
 function handleFileUpload(event: Event): void {
@@ -134,29 +104,12 @@ function removeFile(index: number): void {
 
 // Analyze document
 async function analyzeDocument(file: UploadedFile): Promise<void> {
+  if (!file.content) return;
   analyzingDoc.value = true;
   analysisResult.value = "";
 
   try {
-    const prompt = `Please analyze this document:
-
-Filename: ${file.name}
-Content:
-${file.content}`;
-    const request: ChatRequest = { Message: prompt };
-
-    const res = await fetch(`${config.apiBaseUrl}/api/llm-chat/chat?code=${config.apiKey}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(request),
-    });
-
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-    }
-
-    const data = (await res.json()) as ChatResponse;
-    analysisResult.value = data.Response ?? "No analysis available";
+    analysisResult.value = await apiRepo!.analyzeDocument(file.content, file.name);
   } catch (e: any) {
     analysisResult.value = `Error: ${e.message}`;
   } finally {
@@ -195,8 +148,13 @@ onMounted(() => {
   fetchAnalytics();
   messages.value.push({
     role: "assistant",
-    content: "Hi! I'm your AI assistant. Ask me anything about web development, career advice, or your analytics!",
+    content: "Hi!",
   });
+  docMessages.value.push({
+    role: "assistant",
+    content:
+      "Upload a document on the left, then ask me questions about it here.",
+  })
 });
 </script>
 
@@ -302,7 +260,7 @@ onMounted(() => {
         </div>
 
         <div class="upload-info">
-          Supported formats: PDF, TXT, DOCX, MD (max 10MB per file)
+          Supported formats: TXT, MD (max 10MB per file)
         </div>
 
         <div v-if="uploadedFiles.length === 0" class="empty-state">
@@ -347,8 +305,10 @@ onMounted(() => {
   --border-subtle: #e5e7eb;
   --border-strong: #d1d5db;
 
-  --accent: #2563eb;      /* Primary accent (buttons, active tabs) */
-  --accent-dark: #1d4ed8; /* Hover state */
+  --accent: #2563eb;
+  /* Primary accent (buttons, active tabs) */
+  --accent-dark: #1d4ed8;
+  /* Hover state */
   --accent-soft-text: #1f2937;
 
   --text-main: #111827;
@@ -568,6 +528,7 @@ onMounted(() => {
 }
 
 @keyframes pulse {
+
   0%,
   100% {
     transform: scale(1);
